@@ -10,6 +10,11 @@ class LoadConstantInstruction extends Instruction {
 		this.registerIndex = registerIndex;
 		this.constantValue = constantValue;
 	}
+	
+	void execute(Machine machine) {
+		machine.registers[registerIndex] = constantValue;
+		machine.pc++;
+	}
 }
 
 class DecrementInstruction extends Instruction {
@@ -17,6 +22,11 @@ class DecrementInstruction extends Instruction {
 	
 	DecrementInstruction(int registerIndex) {
 		this.registerIndex = registerIndex;
+	}
+	
+	void execute(Machine machine) {
+		machine.registers[registerIndex]--;
+		machine.pc++;
 	}
 }
 
@@ -28,6 +38,13 @@ class JumpIfZeroInstruction extends Instruction {
 		this.registerIndex = registerIndex;
 		this.instructionIndex = instructionIndex;
 	}
+	
+	void execute(Machine machine) {
+		if (machine.registers[registerIndex] == 0)
+			machine.pc = instructionIndex;
+		else
+			machine.pc++;
+	}
 }
 
 class JumpInstruction extends Instruction {
@@ -35,6 +52,10 @@ class JumpInstruction extends Instruction {
 	
 	JumpInstruction(int instructionIndex) {
 		this.instructionIndex = instructionIndex;
+	}
+	
+	void execute(Machine machine) {
+		machine.pc = instructionIndex;
 	}
 }
 
@@ -47,11 +68,20 @@ class MultiplyInstruction extends Instruction {
 		this.registerIndex2 = registerIndex2;
 	}
 	
+	void execute(Machine machine) {
+		machine.registers[registerIndex1] *= machine.registers[registerIndex2];
+		machine.pc++;
+	}
 }
 
-class HaltInstruction extends Instruction {}
+class HaltInstruction extends Instruction {
+	void exectue(Machine machine) {
+		machine.stop = true;
+	}
+}
 
 class Machine {
+	boolean stop;
 	int pc;
 	int[] registers;
 	Instruction[] instructions;
@@ -62,31 +92,26 @@ class Machine {
 	}
 	
 	void run() {
-		for (;;) {
+		while(!stop) {
 			Instruction instruction = instructions[pc];
 			if (instruction instanceof LoadConstantInstruction) {
 				LoadConstantInstruction lci = (LoadConstantInstruction)instruction;
-				registers[lci.registerIndex] = lci.constantValue;
-				pc++;
+				lci.execute(this);
 			} else if (instruction instanceof DecrementInstruction) {
 				DecrementInstruction di = (DecrementInstruction)instruction;
-				registers[di.registerIndex]--;
-				pc++;
+				di.execute(this);
 			} else if (instruction instanceof MultiplyInstruction) {
 				MultiplyInstruction mi = (MultiplyInstruction)instruction;
-				registers[mi.registerIndex1] *= registers[mi.registerIndex2];
-				pc++;
+				mi.execute(this);
 			} else if (instruction instanceof JumpIfZeroInstruction) {
 				JumpIfZeroInstruction jizi = (JumpIfZeroInstruction)instruction;
-				if (registers[jizi.registerIndex] == 0)
-					pc = jizi.instructionIndex;
-				else
-					pc++;
+				jizi.execute(this);
 			} else if (instruction instanceof JumpInstruction) {
 				JumpInstruction ji = (JumpInstruction)instruction;
 				pc = ji.instructionIndex;
 			} else if (instruction instanceof HaltInstruction) {
-				break;
+				HaltInstruction hi = (HaltInstruction)instruction;
+				hi.exectue(this);
 			} else
 				throw new AssertionError();
 		}
